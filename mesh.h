@@ -26,12 +26,9 @@ public:
             p1 = vertices[indices[i]];
             p2 = vertices[indices[i + 1]];
             p3 = vertices[indices[i + 2]];
-
-//            raster.render_line(p1,p2);
-//            raster.render_line(p2,p3);
-//            raster.render_line(p3,p1);
             raster.set_material(_material);
-            raster.render_triangle(p1, p2, p3);
+//            raster.render_triangle(p1, p2, p3);
+            raster.wireframe_triangle(p1, p2, p3);
         }
     }
 

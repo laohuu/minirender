@@ -127,38 +127,109 @@ public:
         return false;
     }
 
-    void get_viewport_index(glm::vec4 viewport_pos, glm::ivec2 &viewport_index) {
-        auto i = static_cast<int>(viewport_pos.x);
-        auto j = static_cast<int>(viewport_pos.y);
+    glm::ivec2 get_viewport_index(glm::vec4 viewport_pos) {
+        auto i = static_cast<int>(viewport_pos.x + 0.5);
+        auto j = static_cast<int>(viewport_pos.y + 0.5);
+        return {i, j};
+    }
 
-        if (i < 0) i = 0;
-        if (j < 0) j = 0;
-        if (i >= width) i = width - 1;
-        if (j >= height) j = height - 1;
-        viewport_index.x = i;
-        viewport_index.y = j;
+    bool is_inside_plane(const glm::vec4 &project_plane, const glm::vec4 &p) {
+        return project_plane.x * p.x + project_plane.y * p.y + project_plane.z * p.z + project_plane.w * p.w >= 0;
+    }
+
+    vertex2fragment get_interact_fragment(const vertex2fragment &v1,
+                                          const vertex2fragment &v2,
+                                          const glm::vec4 &project_plane) {
+        float da = v1.projection_pos.x * project_plane.x + v1.projection_pos.y * project_plane.y +
+                   v1.projection_pos.z * project_plane.z +
+                   project_plane.w * v1.projection_pos.w;
+        float db = v2.projection_pos.x * project_plane.x + v2.projection_pos.y * project_plane.y +
+                   v2.projection_pos.z * project_plane.z +
+                   project_plane.w * v2.projection_pos.w;
+        float weight = da / (da - db);
+        return vertex2fragment::lerp(v1, v2, weight);
+    }
+
+    bool all_vertexs_inside(glm::vec4 vec1, glm::vec4 vec2, glm::vec4 vec3) {
+        if (vec1.x > vec1.w || vec1.x < -vec1.w)
+            return false;
+        if (vec1.y > vec1.w || vec1.y < -vec1.w)
+            return false;
+        if (vec2.x > vec1.w || vec2.x < -vec1.w)
+            return false;
+        if (vec2.y > vec1.w || vec2.y < -vec1.w)
+            return false;
+        if (vec3.x > vec1.w || vec3.x < -vec1.w)
+            return false;
+        if (vec3.y > vec1.w || vec3.y < -vec1.w)
+            return false;
+        return true;
+    }
+
+    std::vector<vertex2fragment> sutherland_hodgeman(const vertex2fragment &v1,
+                                                     const vertex2fragment &v2,
+                                                     const vertex2fragment &v3) {
+        std::vector<vertex2fragment> output_fragment = {v1, v2, v3};
+        if (all_vertexs_inside(v1.projection_pos, v2.projection_pos, v3.projection_pos)) {
+            return output_fragment;
+        }
+        const std::vector<glm::vec4> view_planes = {
+                //near
+                glm::vec4(0, 0, 1, 1),
+                //far
+                glm::vec4(0, 0, -1, 1),
+                //left
+                glm::vec4(1, 0, 0, 1),
+                //right
+                glm::vec4(-1, 0, 0, 1),
+                //top
+                glm::vec4(0, -1, 0, 1),
+                //bottom
+                glm::vec4(0, 1, 0, 1)
+        };
+
+        for (auto plane: view_planes) {
+            std::vector<vertex2fragment> input_fragment(output_fragment);
+            output_fragment.clear();
+            int input_fragment_len = input_fragment.size();
+            for (int i = 0; i < input_fragment_len; ++i) {
+                auto p_fragment = input_fragment[i];
+                auto s_fragment = input_fragment[(i + input_fragment_len - 1) % input_fragment_len];
+                if (is_inside_plane(plane, p_fragment.projection_pos)) {
+                    if (!is_inside_plane(plane, s_fragment.projection_pos)) {
+                        auto new_fragment = get_interact_fragment(p_fragment, s_fragment, plane);
+                        output_fragment.push_back(new_fragment);
+                    }
+                    output_fragment.push_back(p_fragment);
+                } else if (is_inside_plane(plane, s_fragment.projection_pos)) {
+                    auto new_fragment = get_interact_fragment(p_fragment, s_fragment, plane);
+                    output_fragment.push_back(new_fragment);
+                }
+            }
+        }
+        return output_fragment;
     }
 
     void render_point(const vertex &vert) {
         vertex2fragment v2f = render->vertex_shader(vert);
         render->homogeneous_division(v2f.projection_pos);
         v2f.viewport_pos = viewport_matrix * v2f.projection_pos;
-        glm::ivec2 viewport_index(0);
-        get_viewport_index(v2f.viewport_pos, viewport_index);
+        glm::ivec2 viewport_index = get_viewport_index(v2f.viewport_pos);
         frame_buffer->set_pixel(viewport_index.x, viewport_index.y, vert.color);
     }
 
     void render_line(const vertex &start_vert, const vertex &end_vert) {
         vertex2fragment v2f_start = render->vertex_shader(start_vert);
-        render->homogeneous_division(v2f_start.projection_pos);
-        v2f_start.viewport_pos = viewport_matrix * v2f_start.projection_pos;
         vertex2fragment v2f_end = render->vertex_shader(end_vert);
+
+        render->homogeneous_division(v2f_start.projection_pos);
         render->homogeneous_division(v2f_end.projection_pos);
-        v2f_end.viewport_pos = viewport_matrix * v2f_end.projection_pos;
-        glm::ivec2 start_index;
-        get_viewport_index(v2f_start.viewport_pos, start_index);
-        glm::ivec2 end_index;
-        get_viewport_index(v2f_end.viewport_pos, end_index);
+
+        viewport_transformation(v2f_start);
+        viewport_transformation(v2f_end);
+
+        glm::ivec2 start_index = get_viewport_index(v2f_start.viewport_pos);
+        glm::ivec2 end_index = get_viewport_index(v2f_end.viewport_pos);
         int x0 = start_index.x;
         int y0 = start_index.y;
         int x1 = end_index.x;
@@ -180,9 +251,9 @@ public:
         int y = y0;
         for (int x = x0; x <= x1; x++) {
             if (steep) {
-                frame_buffer->set_pixel(y, x, start_vert.color);
+                frame_buffer->set_pixel(y, x, glm::vec4(1.0f));
             } else {
-                frame_buffer->set_pixel(x, y, start_vert.color);
+                frame_buffer->set_pixel(x, y, glm::vec4(1.0f));
             }
             error2 += derror2;
             if (error2 > dx) {
@@ -192,28 +263,77 @@ public:
         }
     }
 
-    void render_triangle(const vertex &v1, const vertex &v2, const vertex &v3) {
+    void render_viewport_line(const glm::vec4 &start_viewport_pos, const glm::vec4 &end_viewport_pos) {
+        glm::ivec2 start_index = get_viewport_index(start_viewport_pos);
+        glm::ivec2 end_index = get_viewport_index(end_viewport_pos);
+        int x0 = start_index.x;
+        int y0 = start_index.y;
+        int x1 = end_index.x;
+        int y1 = end_index.y;
+        bool steep = false;
+        if (std::abs(x0 - x1) < std::abs(y0 - y1)) {
+            std::swap(x0, y0);
+            std::swap(x1, y1);
+            steep = true;
+        }
+        if (x0 > x1) {
+            std::swap(x0, x1);
+            std::swap(y0, y1);
+        }
+        int dx = x1 - x0;
+        int dy = y1 - y0;
+        int derror2 = std::abs(dy) * 2;
+        int error2 = 0;
+        int y = y0;
+        for (int x = x0; x <= x1; x++) {
+            if (steep) {
+                frame_buffer->set_pixel(y, x, glm::vec4(1.0f));
+            } else {
+                frame_buffer->set_pixel(x, y, glm::vec4(1.0f));
+            }
+            error2 += derror2;
+            if (error2 > dx) {
+                y += (y1 > y0 ? 1 : -1);
+                error2 -= dx * 2;
+            }
+        }
+    }
+
+    void wireframe_triangle(const vertex &v1, const vertex &v2, const vertex &v3) {
         vertex2fragment o1 = render->vertex_shader(v1);
         vertex2fragment o2 = render->vertex_shader(v2);
         vertex2fragment o3 = render->vertex_shader(v3);
 
-        //ClipTriangle
+        //Clip Triangle
+        std::vector<vertex2fragment> clip_triangles = sutherland_hodgeman(o1, o2, o3);
+        int len = clip_triangles.size() - 3 + 1;
+        for (int i = 0; i < len; i++) {
+            o1 = clip_triangles[0];
+            o2 = clip_triangles[i + 1];
+            o3 = clip_triangles[i + 2];
 
+            render->homogeneous_division(o1.projection_pos);
+            render->homogeneous_division(o2.projection_pos);
+            render->homogeneous_division(o3.projection_pos);
+
+            viewport_transformation(o1);
+            viewport_transformation(o2);
+            viewport_transformation(o3);
+
+            render_viewport_line(o1.viewport_pos, o2.viewport_pos);
+            render_viewport_line(o2.viewport_pos, o3.viewport_pos);
+            render_viewport_line(o1.viewport_pos, o3.viewport_pos);
+        }
+    }
+
+    void render_fragment_triangle(vertex2fragment &o1, vertex2fragment &o2, vertex2fragment &o3) {
         render->homogeneous_division(o1.projection_pos);
         render->homogeneous_division(o2.projection_pos);
         render->homogeneous_division(o3.projection_pos);
 
-//        if (o1.projection_pos.x < -1.0f || o1.projection_pos.x > 1.0f ||
-//            o2.projection_pos.x < -1.0f || o2.projection_pos.x > 1.0f ||
-//            o3.projection_pos.x < -1.0f || o3.projection_pos.x > 1.0f) {
-//            std::cout << "delete" << std::endl;
-//            return;
-//        }
-
         if (face_culling(o1.projection_pos, o2.projection_pos, o3.projection_pos)) {
             return;
         }
-
 
         viewport_transformation(o1);
         viewport_transformation(o2);
@@ -270,6 +390,21 @@ public:
         }
     }
 
+    void render_triangle(const vertex &v1, const vertex &v2, const vertex &v3) {
+        vertex2fragment o1 = render->vertex_shader(v1);
+        vertex2fragment o2 = render->vertex_shader(v2);
+        vertex2fragment o3 = render->vertex_shader(v3);
+
+        //Clip Triangle
+        std::vector<vertex2fragment> clip_triangles = sutherland_hodgeman(o1, o2, o3);
+        int len = clip_triangles.size() - 3 + 1;
+        for (int i = 0; i < len; i++) {
+            o1 = clip_triangles[0];
+            o2 = clip_triangles[i + 1];
+            o3 = clip_triangles[i + 2];
+            render_fragment_triangle(o1, o2, o3);
+        }
+    }
 };
 
 #endif //RAYTRACING_RASTERIZER_H
