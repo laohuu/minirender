@@ -32,7 +32,7 @@ int main() {
     const int max_depth = 50;
     float eye_fov = 45.f;
     const int image_channel = 3;
-    camera cam(glm::vec3(0, 0, 8.f), glm::vec3(0.f), eye_fov, aspect_ratio, 0.01f, 100.0f);
+    camera cam(glm::vec3(0, 0, 1.f), glm::vec3(0.f), eye_fov, aspect_ratio, 0.01f, 100.0f);
 
     glm::vec4 background_color(0.05f, 0.05f, 0.05f, 1.0f);
 
@@ -40,11 +40,11 @@ int main() {
     raster.clear_color_buffer(background_color);
     glm::mat4 model = glm::mat4(1.0f);
 
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
-    model = glm::rotate(model, glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    model = glm::rotate(model, glm::radians(20.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::rotate(model, glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-//    model = glm::scale(model, glm::vec3(0.5f));
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    model = glm::rotate(model, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(30.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+//    model = glm::scale(model, glm::vec3(1.f));
 
     glm::mat4 view = cam.get_view_matrix();
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.01f, 100.0f);
