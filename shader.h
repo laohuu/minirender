@@ -46,8 +46,14 @@ public:
     }
 
     glm::vec4 fragment_shader(const vertex2fragment &v2f) {
-        if (tex)
-            return tex->get_color(v2f.texcoord.x, v2f.texcoord.y);
+
+        if (tex) {
+            //repeate
+            float u = v2f.texcoord.x - std::floor(v2f.texcoord.x);
+            float v = v2f.texcoord.y - std::floor(v2f.texcoord.y);
+            return tex->get_color(u, v);
+        }
+
         glm::vec4 color;
         color = v2f.color;
         return color;
