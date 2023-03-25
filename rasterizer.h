@@ -83,6 +83,14 @@ public:
         return result;
     }
 
+    bool face_culling(const glm::vec4 &v1, const glm::vec4 &v2, const glm::vec4 &v3) {
+        glm::vec3 tmp1 = glm::vec3(v2.x - v1.x, v2.y - v1.y, v2.z - v1.z);
+        glm::vec3 tmp2 = glm::vec3(v3.x - v1.x, v3.y - v1.y, v3.z - v1.z);
+        glm::vec3 normal = glm::normalize(glm::cross(tmp1, tmp2));
+        glm::vec3 view = glm::vec3(0, 0, 1);
+        return glm::dot(normal, view) < 0;
+    }
+
     void viewport_transformation(vertex2fragment &v2f) {
         v2f.viewport_pos =
                 viewport_matrix * glm::vec4(v2f.projection_pos.x, v2f.projection_pos.y, v2f.projection_pos.z, 1.0f);
@@ -198,6 +206,19 @@ public:
         render->homogeneous_division(o1.projection_pos);
         render->homogeneous_division(o2.projection_pos);
         render->homogeneous_division(o3.projection_pos);
+
+//        if (o1.projection_pos.x < -1.0f || o1.projection_pos.x > 1.0f ||
+//            o2.projection_pos.x < -1.0f || o2.projection_pos.x > 1.0f ||
+//            o3.projection_pos.x < -1.0f || o3.projection_pos.x > 1.0f) {
+//            std::cout << "delete" << std::endl;
+//            return;
+//        }
+
+        if (face_culling(o1.projection_pos, o2.projection_pos, o3.projection_pos)) {
+            std::cout << "face_culling" << std::endl;
+            return;
+        }
+
 
         viewport_transformation(o1);
         viewport_transformation(o2);

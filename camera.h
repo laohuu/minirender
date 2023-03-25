@@ -36,10 +36,7 @@ public:
 
     glm::mat4 get_view_matrix() {
         glm::mat4 view = glm::mat4(1.0f);
-//        view = glm::translate(view, position);
-//        glm::lookAt(position, target, {0.0f, 1.0f, 0.0f})
         return glm::lookAt(position, target, {0.0f, 1.0f, 0.0f});
-//        return glm::translate(view, glm::vec3(0.0f, 0.0f, -8.0f));
     }
 
     glm::mat4 get_projection_matrix() {
@@ -57,7 +54,6 @@ private:
     float aspect_ratio;
     float z_near;
     float z_far;
-    double lens_radius;
 };
 
 #endif //RAYTRACING_CAMERA_H
