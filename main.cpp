@@ -9,9 +9,8 @@
 #include <iostream>
 #include "model.h"
 #include "rasterizer.h"
+#include "camera.h"
 
-using namespace std;
-using namespace glm;
 
 glm::mat4 get_model_matrix(glm::vec3 world_pos, float angle) {
     glm::mat4 transform = glm::mat4(1.0f);
@@ -19,19 +18,6 @@ glm::mat4 get_model_matrix(glm::vec3 world_pos, float angle) {
     transform = glm::rotate(transform, angle, glm::vec3(0.0f, 0.0f, 1.0f));
     return transform;
 }
-
-glm::mat4 get_view_matrix(glm::vec3 lookfrom, glm::vec3 lookat) {
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -10.0f));
-    return view;
-}
-
-glm::mat4 get_projection_matrix(float eye_fov, float aspect_ratio, float zNear = 0.1f, float zFar = 100.f) {
-    glm::mat4 projection = glm::mat4(1.0f);
-    projection = glm::perspective(glm::radians(eye_fov), aspect_ratio, zNear, zFar);
-    return projection;
-}
-
 
 int main() {
     // load models
@@ -46,27 +32,26 @@ int main() {
     const int max_depth = 50;
     float eye_fov = 45.f;
     const int image_channel = 3;
+    camera cam(glm::vec3(0, 0, 8.f), glm::vec3(0.f), eye_fov, aspect_ratio, 0.01f, 100.0f);
 
     glm::vec4 background_color(0.05f, 0.05f, 0.05f, 1.0f);
 
     rasterizer raster(image_width, image_height, image_channel);
     raster.clear_color_buffer(background_color);
     glm::mat4 model = glm::mat4(1.0f);
-    glm::mat4 view = glm::mat4(1.0f);
-    glm::mat4 projection = glm::mat4(1.0f);
-    model = glm::rotate(model, glm::radians(45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::rotate(model, glm::radians(-45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::rotate(model, glm::radians(-20.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-//    model = glm::translate(model, glm::vec3(-0.0f, 0.0f, -0.0f));
+
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, -5.0f));
+    model = glm::rotate(model, glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    model = glm::rotate(model, glm::radians(20.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, glm::radians(10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 //    model = glm::scale(model, glm::vec3(0.5f));
 
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -8.0f));
-    projection = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.01f, 100.0f);
+    glm::mat4 view = cam.get_view_matrix();
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.01f, 100.0f);
 
     raster.set_model_matrix(model);
     raster.set_view_matrix(view);
     raster.set_projection_matrix(projection);
-//    raster.set_texture()
 
     our_model.draw(raster);
     raster.ouput_image();
