@@ -8,28 +8,22 @@
 #include "glm/glm.hpp"
 
 class ray {
+private:
+    glm::vec3 direction;
+    glm::vec3 position;
 public:
+
     ray() = default;
 
-    ray(const glm::vec3 &origin, const glm::vec3 &direction, double time = 0.0)
-            : orig(origin), dir(direction), tm(time) {}
-
     ray(const glm::vec3 &origin, const glm::vec3 &direction)
-            : orig(origin), dir(direction) {}
+            : position(origin), direction(direction) {}
 
-    glm::vec3 at(double t) const {
-        return orig + dir * tm;
+    glm::vec3 get_position_by_time(float t) const {
+        return position + direction * t;
     }
 
-    glm::vec3 origin() const { return orig; }
-    glm::vec3 direction() const { return dir; }
-
-    double time() const { return tm; }
-
-public:
-    glm::vec3 dir;
-    glm::vec3 orig;
-    float tm;
+    glm::vec3 get_position() const { return position; }
+    glm::vec3 get_direction() const { return direction; }
 };
 
 #endif //RAYTRACING_RAY_H

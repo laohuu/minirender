@@ -7,7 +7,7 @@
 #include "utils.h"
 #include "vertex.h"
 #include "framebuffer.h"
-#include "texture.h"
+#include "material.h"
 #include "vertex2fragment.h"
 
 
@@ -17,6 +17,7 @@ public:
         model_matrix = glm::mat4(1.0f);
         view_matrix = glm::mat4(1.0f);
         projection_matrix = glm::mat4(1.0f);
+        _material = nullptr;
     }
 
     ~shader() = default;
@@ -25,7 +26,7 @@ private:
     glm::mat4 model_matrix{};
     glm::mat4 view_matrix{};
     glm::mat4 projection_matrix{};
-    shared_ptr<texture> tex;
+    shared_ptr<material> _material;
 
 public:
     void homogeneous_division(glm::vec4 &project_pos) {
@@ -47,11 +48,12 @@ public:
 
     glm::vec4 fragment_shader(const vertex2fragment &v2f) {
 
-        if (tex) {
+        if (_material != nullptr) {
             //repeate
             float u = v2f.texcoord.x - std::floor(v2f.texcoord.x);
             float v = v2f.texcoord.y - std::floor(v2f.texcoord.y);
-            return tex->get_color(u, v);
+
+            return _material->get_diffuse(u, v);
         }
 
         glm::vec4 color;
@@ -63,8 +65,8 @@ public:
         model_matrix = model;
     }
 
-    void set_texture(shared_ptr<texture> _tex) {
-        tex = _tex;
+    void set_material(shared_ptr<material> _mat) {
+        _material = _mat;
     }
 
     void set_view_matrix(const glm::mat4 &view) {

@@ -3,7 +3,7 @@
 
 #include "framebuffer.h"
 #include "shader.h"
-#include "aabb.h"
+//#include "aabb.h"
 
 class rasterizer {
 
@@ -14,6 +14,7 @@ private:
     framebuffer *frame_buffer;
     shader *render;
     glm::mat4 viewport_matrix;
+
 public:
     rasterizer(const int &w, const int &h, const int &c) :
             width(w), height(h), channel(c), frame_buffer(nullptr), render(nullptr) {
@@ -30,8 +31,8 @@ public:
         render = nullptr;
     }
 
-    void set_texture(shared_ptr<texture> _tex) {
-        render->set_texture(_tex);
+    void set_material(shared_ptr<material> _material) {
+        render->set_material(_material);
     }
 
     void set_model_matrix(const glm::mat4 &model) {

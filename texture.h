@@ -12,28 +12,52 @@ public:
     unsigned int id;
     string type;
     string path;
-    int width, height, channel;
-    unsigned char *color_data;
 
-    texture() : color_data(nullptr) {};
+    virtual glm::vec4 get_value(double u, double v) const = 0;
+};
 
-    ~texture() {
-        if (color_data)
-            delete[] color_data;
-    };
+class solid_color : public texture {
+public:
+    solid_color() {}
 
-    texture(const string &path) : path(path) {
+    solid_color(glm::vec4 color) : color_value(color) {}
 
+    solid_color(float red, float green, float blue)
+            : solid_color(glm::vec4(red, green, blue, 1.0f)) {}
+
+    glm::vec4 get_value(double u, double v) const override {
+        return color_value;
     }
 
-    texture(
-            const unsigned int &id,
-            const string &type,
-            const string &path
-    ) :
-            id(id), type(type), path(path) {}
+private:
+    glm::vec4 color_value;
+};
 
-    texture(const texture &tex) : id(tex.id), type(tex.type), path(tex.path) {}
+class image_texture : public texture {
+public:
+    image_texture(const string &path) {
+        this->path = path;
+        color_data = stbi_load(
+                path.c_str(), &width, &height, &channel, 0);
+
+        std::cout << "load texture '" << path << "' .\n";
+        if (!color_data) {
+            std::cerr << "ERROR: Could not load texture image file '" << path << "'.\n";
+            width = height = 0;
+        }
+    }
+
+    image_texture() : color_data(nullptr), width(0), height(0), channel(0) {}
+
+    ~image_texture() {
+        if (color_data)
+            stbi_image_free(color_data);
+        color_data = nullptr;
+    }
+
+private:
+    int width, height, channel;
+    unsigned char *color_data;
 
     glm::vec4 set_color(unsigned char *data) {
         if (color_data)
@@ -42,7 +66,7 @@ public:
         memcpy(color_data, data, width * height * channel);
     }
 
-    glm::vec4 get_color(float u, float v) {
+    glm::vec4 get_value(double u, double v) const override {
         // If we have no texture data, then return solid cyan as a debugging aid.
         if (color_data == nullptr)
             return glm::vec4(0.f, 1.0f, 1.0f, 1.0f);;
@@ -64,9 +88,6 @@ public:
         for (int k = 0; k < channel; ++k) {
             color[k] = *pixel_data++ * color_scale;
         }
-//        float w = color.w;
-//        color = color * color_scale;
-//        color.w = w;
         return color;
     }
 

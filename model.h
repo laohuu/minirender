@@ -32,12 +32,12 @@ private:
 
     mesh process_mesh(aiMesh *mesh, const aiScene *scene);
 
-    vector<shared_ptr<texture>> load_material_textures(aiMaterial *mat, aiTextureType type,
-                                                       string typeName);
+    shared_ptr<texture> load_material_textures(aiMaterial *mat, aiTextureType type,
+                                               string typeName);
 };
 
 void model::draw(rasterizer &raster) {
-    for (auto & meshe : meshes)
+    for (auto &meshe: meshes)
         meshe.draw(raster);
 }
 
@@ -69,7 +69,6 @@ mesh model::process_mesh(aiMesh *ai_mesh, const aiScene *scene) {
     vector<unsigned int> indices;
     vector<shared_ptr<texture>> textures;
 
-    // walk through each of the mesh's vertices
     for (unsigned int i = 0; i < ai_mesh->mNumVertices; i++) {
         vertex vertex;
         glm::vec3 vector;
@@ -121,67 +120,46 @@ mesh model::process_mesh(aiMesh *ai_mesh, const aiScene *scene) {
             indices.push_back(face.mIndices[j]);
     }
     // process materials
-    aiMaterial *material = scene->mMaterials[ai_mesh->mMaterialIndex];
-
+    aiMaterial *ai_material = scene->mMaterials[ai_mesh->mMaterialIndex];
     // 1. diffuse maps
-    vector<shared_ptr<texture>> diffuseMaps = load_material_textures(material, aiTextureType_DIFFUSE,
-                                                                     "texture_diffuse");
-    textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+    shared_ptr<texture> diffuse_texture = load_material_textures(ai_material, aiTextureType_DIFFUSE,
+                                                                 "texture_diffuse");
     // 2. specular maps
-    vector<shared_ptr<texture>> specularMaps = load_material_textures(material, aiTextureType_SPECULAR,
-                                                                      "texture_specular");
-    textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+    shared_ptr<texture> specular_texture = load_material_textures(ai_material, aiTextureType_SPECULAR,
+                                                                  "texture_specular");
     // 3. normal maps
-    std::vector<shared_ptr<texture>> normalMaps = load_material_textures(material, aiTextureType_HEIGHT,
-                                                                         "texture_normal");
-    textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-    // 4. height maps
-    std::vector<shared_ptr<texture>> heightMaps = load_material_textures(material, aiTextureType_AMBIENT,
-                                                                         "texture_height");
-    textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+    shared_ptr<texture> normal_texture = load_material_textures(ai_material, aiTextureType_HEIGHT,
+                                                                "texture_normal");
+//    // 4. height maps
+//    std::vector<shared_ptr<texture>> height_texture = load_material_textures(ai_material, aiTextureType_AMBIENT,
+//                                                                         "texture_height");
 
+    shared_ptr<material> mat = make_shared<lambertian>(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f));
+    if (diffuse_texture != nullptr)
+        mat = make_shared<lambertian>(diffuse_texture, specular_texture, normal_texture);
     // return a mesh object created from the extracted mesh data
-    return mesh(vertices, indices, textures);
+    return mesh(vertices, indices, mat);
 }
 
-void texture_from_file(const char *path, const string &directory, shared_ptr<texture> &tex) {
-    string filename = string(path);
-    filename = directory + '/' + filename;
+shared_ptr<texture> model::load_material_textures(aiMaterial *mat, aiTextureType type, string typeName) {
+    if (mat->GetTextureCount(type) <= 0)
+        return nullptr;
+    shared_ptr<texture> texture_ptr;
 
-    unsigned char *data = stbi_load(filename.c_str(), &tex->width, &tex->height, &tex->channel, 0);
-    if (data) {
-        tex->set_color(data);
-        stbi_image_free(data);
-    } else {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
-        stbi_image_free(data);
-    }
-}
-
-vector<shared_ptr<texture>> model::load_material_textures(aiMaterial *mat, aiTextureType type, string typeName) {
-    vector<shared_ptr<texture>> textures;
-    for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
-        aiString str;
-        mat->GetTexture(type, i, &str);
-        bool skip = false;
-        for (unsigned int j = 0; j < textures_loaded.size(); j++) {
-            if (std::strcmp(textures_loaded[j]->path.data(), str.C_Str()) == 0) {
-                textures.push_back(textures_loaded[j]);
-                skip = true;
-                break;
-            }
-        }
-        if (!skip) {
-            shared_ptr<texture> tex = make_shared<texture>();
-            texture_from_file(str.C_Str(), this->directory, tex);
-            std::cout << str.C_Str() << std::endl;
-            tex->type = typeName;
-            tex->path = str.C_Str();
-            textures.push_back(tex);
-            textures_loaded.push_back(tex);
+    aiString str;
+    mat->GetTexture(type, 0, &str);
+    for (const auto &texture_loaded: textures_loaded) {
+        if (std::strcmp(texture_loaded->path.data(), str.C_Str()) == 0) {
+            return texture_loaded;
         }
     }
-    return textures;
+    string filename = string(str.C_Str());
+    filename = this->directory + '/' + filename;
+    auto tex = make_shared<image_texture>(filename.c_str());
+    tex->type = typeName;
+    tex->path = str.C_Str();
+    textures_loaded.push_back(tex);
+    return tex;
 }
 
 
