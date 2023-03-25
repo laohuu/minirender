@@ -32,7 +32,7 @@ int main() {
     const int max_depth = 50;
     float eye_fov = 45.f;
     const int image_channel = 3;
-    camera cam(glm::vec3(0, 0, 1.f), glm::vec3(0.f), eye_fov, aspect_ratio, 0.01f, 100.0f);
+    camera cam(glm::vec3(0, 0, 8.f), glm::vec3(0.f), eye_fov, aspect_ratio, 0.01f, 100.0f);
 
     glm::vec4 background_color(0.05f, 0.05f, 0.05f, 1.0f);
 
