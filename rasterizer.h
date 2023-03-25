@@ -111,15 +111,10 @@ public:
     }
 
     double product(glm::vec2 p1, glm::vec2 p2, glm::vec2 p3) {
-        //首先根据坐标计算p1p2和p1p3的向量，然后再计算叉乘
-        //p1p2 向量表示为 (p2.x-p1.x,p2.y-p1.y)
-        //p1p3 向量表示为 (p3.x-p1.x,p3.y-p1.y)
         return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
     }
 
     bool inside_triangle(float x, float y, const glm::vec4 &vert1, const glm::vec4 &vert2, const glm::vec4 &vert3) {
-//        glm::vec3 barycentric = compute_barycentric2D(x, y, vert1, vert2, vert3);
-//        return barycentric.x >= 0 && barycentric.y >= 0 && barycentric.z >= 0;
         glm::vec2 vert(x, y);
         glm::vec2 p1(vert1.x, vert1.y);
         glm::vec2 p2(vert2.x, vert2.y);
@@ -215,7 +210,6 @@ public:
 //        }
 
         if (face_culling(o1.projection_pos, o2.projection_pos, o3.projection_pos)) {
-            std::cout << "face_culling" << std::endl;
             return;
         }
 
@@ -266,11 +260,6 @@ public:
                 auto interpolated_world_pos = interpolate(alpha, beta, gamma, o1.projection_pos.w, o2.projection_pos.w,
                                                           o3.projection_pos.w, o1.world_pos, o2.world_pos,
                                                           o3.world_pos, Z);
-
-//                auto interpolated_texcoord =
-//                        alpha * o1.texcoord / o1.projection_pos.w + beta * o2.texcoord / o2.projection_pos.w +
-//                        gamma * o3.texcoord / o3.projection_pos.w;
-//                interpolated_texcoord *= Z;
 
                 vertex2fragment v2f(interpolated_world_pos, interpolated_projection_pos, interpolated_color,
                                     interpolated_texcoord, interpolated_normal);
