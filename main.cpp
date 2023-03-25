@@ -25,8 +25,8 @@ glm::mat4 get_model_matrix(glm::vec3 world_pos, float angle_x, float angle_y, fl
 int main() {
     // load models
     // ----------
-//    model our_model(FileSystem::getPath("resources/objects/backpack/backpack.obj"));
-    model our_model(FileSystem::getPath("resources/objects/Crate/Crate1.obj"));
+    model our_model(FileSystem::getPath("resources/objects/backpack/backpack.obj"));
+//    model our_model(FileSystem::getPath("resources/objects/Crate/Crate1.obj"));
 
     const float aspect_ratio = 16.0 / 9.0;
     const int image_width = 1280;
@@ -40,7 +40,7 @@ int main() {
     rasterizer raster(image_width, image_height, image_channel);
     raster.clear_color_buffer(background_color);
 
-    glm::mat4 model_transformation = get_model_matrix(glm::vec3(5.0f, 0.0f, 0.0f), 30.0f, 30.0f, 0.0f);
+    glm::mat4 model_transformation = get_model_matrix(glm::vec3(0.0f, 0.0f, 0.0f), 30.0f, 30.0f, 0.0f);
     glm::mat4 view = cam.get_view_matrix();
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.01f, 100.0f);
 

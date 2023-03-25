@@ -2,7 +2,6 @@
 #define RAYTRACING_MATERIAL_H
 
 #include "texture.h"
-#include "ray.h"
 
 class material {
 public:
