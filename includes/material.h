@@ -6,6 +6,7 @@
 class material {
 public:
     glm::vec4 albedo_value{};
+    float shininess = 32.0f;
 
     virtual glm::vec4 get_diffuse(double u, double v) const {
         return albedo_value;

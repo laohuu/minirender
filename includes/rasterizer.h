@@ -3,7 +3,6 @@
 
 #include "framebuffer.h"
 #include "shader.h"
-//#include "aabb.h"
 
 class rasterizer {
 
@@ -12,8 +11,9 @@ private:
     int height;
     int channel;
     framebuffer *frame_buffer;
-    shader *render;
+    shared_ptr<shader> render;
     glm::mat4 viewport_matrix;
+
 
 public:
     rasterizer(const int &w, const int &h, const int &c) :
@@ -21,11 +21,15 @@ public:
         init();
     }
 
+    rasterizer(const int &w, const int &h, const int &c, shared_ptr<shader> _shader) :
+            width(w), height(h), channel(c), frame_buffer(nullptr), render(_shader) {
+        viewport_matrix = get_viewport_matrix();
+        frame_buffer = new framebuffer(width, height, channel);
+    }
+
     ~rasterizer() {
         if (frame_buffer)
             delete frame_buffer;
-        if (render)
-            delete render;
 
         frame_buffer = nullptr;
         render = nullptr;
@@ -43,6 +47,22 @@ public:
         render->set_view_matrix(view);
     }
 
+    void set_camera_pos(const glm::vec3 &pos) {
+        render->set_camera_pos(pos);
+    }
+
+    void push_dir_light(shared_ptr<direction_light> dir_lig) {
+        render->push_dir_light(dir_lig);
+    }
+
+    void push_spot_light(shared_ptr<spot_light> spot_lig) {
+        render->push_spot_light(spot_lig);
+    }
+
+    void push_point_light(shared_ptr<point_light> point_lig) {
+        render->push_point_light(point_lig);
+    }
+
     void set_projection_matrix(const glm::mat4 &project) {
         render->set_projection_matrix(project);
     }
@@ -50,11 +70,9 @@ public:
     void init() {
         if (frame_buffer)
             delete frame_buffer;
-        if (render)
-            delete render;
         viewport_matrix = get_viewport_matrix();
         frame_buffer = new framebuffer(width, height, channel);
-        render = new shader();
+        render = make_shared<shader>();
     }
 
     void resize(const int &w, const int &h) {

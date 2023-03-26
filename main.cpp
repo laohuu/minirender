@@ -26,21 +26,33 @@ int main() {
     // load models
     // ----------
     model our_model(FileSystem::getPath("resources/objects/backpack/backpack.obj"));
-//    model our_model(FileSystem::getPath("resources/objects/Crate/Crate1.obj"));
+//    model our_model(FileSystem::getPath("resources/objects/cube/cube.obj"));
 
+    // Image
     const float aspect_ratio = 16.0 / 9.0;
     const int image_width = 1280;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
     const int image_channel = 3;
     float eye_fov = 45.f;
-    camera cam(glm::vec3(0, 0, 8.f), glm::vec3(0.f), eye_fov, aspect_ratio, 0.01f, 100.0f);
+    camera cam(glm::vec3(0, 0, 5.f), glm::vec3(0.f), eye_fov, aspect_ratio, 0.01f, 100.0f);
 
+    //Light
+    shared_ptr<direction_light> _light = make_shared<direction_light>();
+    shared_ptr<point_light> point_li = make_shared<point_light>();
+    shared_ptr<point_light> point_li2 = make_shared<point_light>(glm::vec3(0, -2.f, 2.0f));
+    shared_ptr<spot_light> spot_li = make_shared<spot_light>();
+    shared_ptr<shader> render = make_shared<blinn_phong_shader>();
+    render->push_dir_light(_light);
+    render->push_point_light(point_li);
+    render->push_point_light(point_li2);
+    render->push_spot_light(spot_li);
+
+//    raster.
+    rasterizer raster(image_width, image_height, image_channel, render);
     glm::vec4 background_color(0.05f, 0.05f, 0.05f, 1.0f);
-
-    rasterizer raster(image_width, image_height, image_channel);
     raster.clear_color_buffer(background_color);
 
-    glm::mat4 model_transformation = get_model_matrix(glm::vec3(0.0f, 0.0f, 0.0f), 30.0f, 30.0f, 0.0f);
+    glm::mat4 model_transformation = get_model_matrix(glm::vec3(0.0f, 0.0f, 0.0f), -0.0f, 0.0f, 0.0f);
     glm::mat4 view = cam.get_view_matrix();
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.01f, 100.0f);
 

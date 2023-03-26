@@ -71,6 +71,10 @@ private:
         if (color_data == nullptr)
             return glm::vec4(0.f, 1.0f, 1.0f, 1.0f);;
 
+         //reapte
+//        float u = u - std::floor(u);
+//        float v =v - std::floor(v);
+
         // Clamp input texture coordinates to [0,1] x [1,0]
         u = clamp(u, 0.0f, 1.0f);
         v = 1.0f - clamp(v, 0.0f, 1.0f);  // Flip V to image coordinates
